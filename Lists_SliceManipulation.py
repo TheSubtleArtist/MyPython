@@ -1,0 +1,72 @@
+"""
+Exhibits all list manipluations found in chapter 3
+"""
+
+random = ['ray', 'texture', 'temporary', 'fresh', 'internal', 'spoon', 'yoke', 'keen',
+          'crowd', 'mere']
+random2 = ['ray', 'texture', 'temporary', 'fresh', 'internal', 'spoon', 'yoke', 'keen',
+           'crowd', 'mere']
+print(len(random))
+source = ['groan', 'mighty', 'modern', 'lie', 'accept', 'scare', 'lovely', 'pail',
+          'therapeutic', 'optimal', 'dizzy', 'homely']
+print(len(source))
+
+print("Access and Element")
+print(random)
+print(random[4])
+print(random[4].title())
+print(random[-1].title())
+print()
+print("Using Individual Values from a List")
+print(random)
+print(f'The fifth word in this list is "{random[4]}".')
+print()
+print("Changing, Adding, and Removing Elements")
+print(f"This is the list:")
+print(random)
+print("This is the list after changing the fifth element")
+random[4], source[4] = source[4], random[4]
+print(random)
+print("This is the list after adding an element to the end.")
+random.append(source[4])
+print(random)
+print("This is the list after adding an element to the middle.")
+random.insert(int(len(random) / 2), source[9])
+print(random)
+print("This is the list after deleting the sixth element.")
+del random[7]
+print(random)
+print("This is the list after popping the final element.")
+random.pop()
+print(random)
+print("This is the list after popping the seventh element.")
+random.pop(8)
+print(random)
+print('This is the list after removing "temporary".')
+random.remove('temporary')
+print(random)
+print()
+print()
+print("Organizing a List")
+print("This is the original list:")
+print(random)
+print("This is the permanently sorted list:")
+random.sort()
+print(random)
+print("This is the permanently sorted list in reverse:")
+random.sort(reverse=True)
+print(random)
+print()
+print("This is the initialized list:")
+print(random2)
+print()
+print("This is the initialized list temporarily sorted:")
+print(sorted(random2))
+print()
+print(random2)
+print("This is the initialized list temporarily sorted in reverse order:")
+random2.reverse()
+print(random2)
+print(f"The list has {len(random)} elements.")
+random.extend(source)
+print(random)
