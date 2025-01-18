@@ -58,45 +58,45 @@ def convertTime(time):
 	rightMeow = datetime.datetime.fromtimestamp(time)
 	return rightMeow.strftime('%X')
 
+if __name__ == '__main__':
+	flag = True
 
-flag = True
+	while flag == True:
+		# Get user input
+		location = str(input("Please enter the location to query"))
 
-while flag == True:
-	# Get user input
-	location = str(input("Please enter the location to query"))
+		# Get Data
+		try:
+			response = (requests.get(f'{api_url}{location},{country}&units={units}&appid={sensitiveData.getApiKey()}'))
+			jsonResponse = response.json()
+			print(f"\nSuccessful Connection!\n")
+		except HTTPError as http_err:
+			print(f'HTTP error occurred: {http_err}')
+		except Exception as err:
+			print(f'Other error occurred:{err}')
 
-	# Get Data
-	try:
-		response = (requests.get(f'{api_url}{location},{country}&units={units}&appid={sensitiveData.getApiKey()}'))
-		jsonResponse = response.json()
-		print(f"\nSuccessful Connection!\n")
-	except HTTPError as http_err:
-		print(f'HTTP error occurred: {http_err}')
-	except Exception as err:
-		print(f'Other error occurred:{err}')
+		# print_nested_dict(jsonResponse, 4)
 
-	# print_nested_dict(jsonResponse, 4)
+		# Output data to a file, mostly for development purposes
+		with open('API_Weather.txt', 'w') as send:
+			send.write(json.dumps(jsonResponse, indent=4))
 
-	# Output data to a file, mostly for development purposes
-	with open('API_Weather.txt', 'w') as send:
-		send.write(json.dumps(jsonResponse, indent=4))
+		# retrieve information from the file and output in a human friendly format
+		with open('AssignmentWeek12_Weather.txt', 'r') as retrieve:
+			weatherData = json.load(retrieve)
+			windy = windDirection(weatherData['wind']['deg'])
+			print(f"Current weather for the city of {weatherData['name']} at {convertTime(weatherData['dt'])}:")
+			print(f"Sunrise: {convertTime(weatherData['sys']['sunrise'])} ")
+			print(f"Sunset: {convertTime(weatherData['sys']['sunset'])} ")
+			print(f"Current Temperature is: {weatherData['main']['temp']} degrees")
+			print(f"With wind chill: {weatherData['main']['feels_like']}.")
+			print(f"Today's highest temperature: {weatherData['main']['temp_max']} degrees.")
+			print(f"Today's lowest temperature: {weatherData['main']['temp_min']} degrees.")
+			print(f"Humidity is currently at: {weatherData['main']['humidity']}%.")
+			print(f"Wind is out of the {windy} at {weatherData['wind']['speed']}mph, but gusting to {weatherData['wind']['gust']}mph.")
 
-	# retrieve information from the file and output in a human friendly format
-	with open('AssignmentWeek12_Weather.txt', 'r') as retrieve:
-		weatherData = json.load(retrieve)
-		windy = windDirection(weatherData['wind']['deg'])
-		print(f"Current weather for the city of {weatherData['name']} at {convertTime(weatherData['dt'])}:")
-		print(f"Sunrise: {convertTime(weatherData['sys']['sunrise'])} ")
-		print(f"Sunset: {convertTime(weatherData['sys']['sunset'])} ")
-		print(f"Current Temperature is: {weatherData['main']['temp']} degrees")
-		print(f"With wind chill: {weatherData['main']['feels_like']}.")
-		print(f"Today's highest temperature: {weatherData['main']['temp_max']} degrees.")
-		print(f"Today's lowest temperature: {weatherData['main']['temp_min']} degrees.")
-		print(f"Humidity is currently at: {weatherData['main']['humidity']}%.")
-		print(f"Wind is out of the {windy} at {weatherData['wind']['speed']}mph, but gusting to {weatherData['wind']['gust']}mph.")
-
-	repeat = input("Would you like to try again? \t 'Y' or 'N'")
-	repeat = repeat.upper()
-	if repeat != 'Y':
-		flag = False
-		print("Goodbye")
+		repeat = input("Would you like to try again? \t 'Y' or 'N'")
+		repeat = repeat.upper()
+		if repeat != 'Y':
+			flag = False
+			print("Goodbye")

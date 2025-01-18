@@ -4,41 +4,43 @@
 from array import *
 
 
-#create an array.
+vals = array('i', [5, 9, -8, 4, 2] )
 
-vals=array('i', [5, 9, -8, 4, 2] )
-#First argument establishes the type of values to be stored in the array. "i" represents signed integers
+def showReverse(testArramy):
+    print("vals typecode: ",vals.typecode)
+    print("Position 1 as created: ",vals[1])
+    vals.reverse()
+    print("Position 1 after the 'reverse' function: ", vals[1])
 
-print(vals.typecode)
-print(vals[1])
-vals.reverse()
-print(vals[1])
+def arrayLength(array):
+    print ("array length: ", len(array))
+    
 
+def printWithRange(array):
+    print ("i: ", end=" ")
+    for i in range(len(array)):
+        print(array[i], end=" ")
 
-vals_len = len(vals)
-for i in range(vals_len):
-    print(vals[i])
-
-#second method to access the length of the array
-for i in range(len(vals)):
-    print(vals[i])
-
-#Simplest Third method for calling the length
-
-for e in vals:
-    print(e)
-
-#create a new array with the same values
-newVals = array(vals.typecode, (a for a in vals))
-
-for d in newVals:
-    print(d)
+def accessWithIn(array):
+    print("e: ", end=" ")
+    for e in array:
+        print(e, end=" ")
 
 
-#create a new array while performing a function on the values of the original array
-powVals = array(vals.typecode, (b*b for b in vals))
+if __name__ == '__main__':
 
-for c in powVals:
-    for i in vals:
-        print(i, end = " ")
-    print(c, end = " " )
+    #create an array.
+    #First argument establishes the type of values to be stored in the array. "i" represents signed integers
+    vals=array('i', [5, 9, -8, 4, 2] )
+
+    showReverse(vals)
+    arrayLength(vals)
+    printWithRange(vals)
+    accessWithIn(vals)
+    # Clone an Array
+    newVals = array(vals.typecode, (a for a in vals))
+    accessWithIn(newVals)
+    # Simultaenously clone and perform a transofrmation
+    powVals = array(vals.typecode, (b*b for b in vals))
+    accessWithIn(powVals)
+
