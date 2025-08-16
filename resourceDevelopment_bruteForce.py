@@ -5,6 +5,7 @@ the password is known to be a four digit number
 '''
 
 import requests
+
 url = "http://python.thm/labs/lab1/index.php"
 username = 'admin'
 
