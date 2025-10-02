@@ -35,7 +35,7 @@ pip 25.2 from D:\GitHub\MyPython\.myvenv\Lib\site-packages\pip (python 3.13)
 
 The environment is running from within the '.myvenv' directory.  
 
-### Install pytest  
+## Install pytest  
 
 ```bash
 :> (testing) PS D:\GitHub\MyPython> pip install pytest
@@ -60,3 +60,29 @@ Downloading pygments-2.19.2-py3-none-any.whl (1.2 MB)
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 17.6 MB/s  0:00:00
 Installing collected packages: pygments, pluggy, packaging, iniconfig, colorama, pytest
 ```
+
+## Getting Started with pytest 
+
+create ``test_calculator.py`` 
+
+### Test Discovery
+
+pytest automatically finds tests using these rules:  
+
+- Test files: test_*.py or *_test.py  
+- Test classes: Test* (must start with Test)  
+- Test functions: test_* (must start with test_)  
+
+### Running all test  
+
+`:> pytest` # runs all tests in the current and subdirectories  
+
+## Verbose Output  
+
+`:> pytest -v` # shows indivdiual test names and results  
+
+## Teseting Exercises  
+
+### dollars
+
+### to_percent
