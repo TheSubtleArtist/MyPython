@@ -1,4 +1,4 @@
 .venv
 .password
-pytest_cache
-pytest_cache
+.pytest_cache
+__pycache__
