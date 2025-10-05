@@ -1,2 +1,4 @@
-.myvenv
 .venv
+.password
+pytest_cache
+pytest_cache
