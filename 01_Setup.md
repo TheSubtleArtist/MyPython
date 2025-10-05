@@ -24,7 +24,10 @@ Create the virtual environment: `:> python3 -m venv .myvenv --prompt='testing'`
 - ".myvenv" designates the name of the folder where the new virtual environment is stored. Files stored here will be deleted when the virtual environment is deleted    
 - "--prompt='testing'" designates the prompt display text  
 
-Activate the virtural environment: `:> source .myvenv/bin/activate`  
+### Activate the virtual environment
+
+Linux:  `:> source .myvenv/bin/activate`  
+Windows: `:> .venv\Scripts\activate`
 
 The virtual environment is activated when '(testing)' is displayed as the prompt.  
 
@@ -36,6 +39,16 @@ pip 25.2 from D:\GitHub\MyPython\.myvenv\Lib\site-packages\pip (python 3.13)
 ```  
 
 The environment is running from within the '.myvenv' directory.  
+
+### Deactivate a VENV
+
+`:> deactivate`
+
+### Delete a VENV  
+
+Deactivate first
+Delete with unix command: `:> rm -r .venv`
+Delete with Pipenv when Pipenv was used to create the venv. must be inside the project directory, so that Pipenv and Pipenv.lock files are visible: `:>pipenv --rm`
 
 ### Install pytest  
 
@@ -249,12 +262,94 @@ If your code calls a function:
 
 `Inspire.py` has a common CSV parsing bug
 
+`Inspire_test.py` test and reveals the failed  test
+
+Run the test `:> pytest --pdb Inspire_test.py` automatically enters the debugging envrionment upon failure of a test.  
+
+```python
+filename = 'C:\\Users\\danie\\AppData\\Local\\Temp\\pytest-of-danie\\pytest-0\\test_quote_with_comma0\\quotes.csv'
+
+    def get_all_quotes(filename):
+        """Read quotes from a CSV file and return as named tuples."""
+        Quote = namedtuple('Quote', 'author text')
+        quotes = []
+        with open(filename) as quotes_file:
+            for line in quotes_file:
+>               author, quote = line.split(',')
+                ^^^^^^^^^^^^^
+E               ValueError: too many values to unpack (expected 2)
+
+inspire.py:12: ValueError
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> entering PDB >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> PDB post_mortem (IO-capturing turned off) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 
+> d:\github\mypython\inspire.py(12)get_all_quotes()
+-> author, quote = line.split(',')
+(Pdb)
+```
+Use `l` to show where this first error occurred. The first run of the test indicated line twelve. The the `l` command shows the program has stopped at line 12.  
+The error is within a loop. use `p line` to print the current value of "line" at the current iteration of the loop.  
+Use `line.split(',')` to show what happened with teh command from the code is executed. Notice the result of the command is four elements in the list instead of the expected two. Commas within the quotes are being interpreted as delimters, not part of the list element. CSV parsing is not correct. Fixing this is not the point in this training.
+
+```python
+(Pdb) l
+  7         """Read quotes from a CSV file and return as named tuples."""
+  8         Quote = namedtuple('Quote', 'author text')
+  9         quotes = []
+ 10         with open(filename) as quotes_file:
+ 11             for line in quotes_file:
+ 12  ->             author, quote = line.split(',')
+ 13                 quotes.append(Quote(author, quote))
+ 14         return quotes
+ 15
+ 16
+ 17     def main(filename):
+(Pdb) p line
+'Dr. Seuss,"One fish, two fish, red fish, blue fish"\n'
+(Pdb) line.split(',')
+['Dr. Seuss', '"One fish', ' two fish', ' red fish', ' blue fish"\n']
+(Pdb)
+```
 
 
+### Inspection Python Objects
 
+objects.py
 
-### Inspection Pythong Objects
 
 ### Debugging Tips
 
+use `breakpoint()` to start python debugger   
+
+- n(ext): Run the next line of code
+- s(tep): Step into the current line of code (step into a function call usually)
+- r(eturn): Return from the current function
+- c(ontinue): Exit PDB, continuing until the next breakpoint or the end of the program
+- l(ist): List the surrounding code lines
+- interact: Enter interactive mode, which starts a Python REPL session
+- !: Prefix a line with ! to force PDB to run it as Python code
+- q(uit): Exit debugger
+- pp <variable>: Pretty-print a variable  
+
 ### Debugging Exercises
+
+#### Guessing Game
+
+guessingGame.py  
+
+Askss user to guess either `0` or `1` and returns whether they have guessed correctly.  
+Current problem: Always answers as incorrect, even if the user's guess is correct  
+
+1. Add `breakpoint()` before  the `if` statement since everthing before that executes.
+2. Run the program and guess `0`. The program fails and enters python debugger automatically
+3. use `p n` to print the user's guess
+4. use `p answer` to reveal the random integer selected by the program.
+5. Notice the user's input is stored as a string while `answer` is stored as an integer. This is a type mismatch
+6. Verify with `p type(n)` and `p type(answer)` to shows the types of objects.
+7. Verify the failure with `p n == answer`
+8. Fix the code by changing the input statement to `n = int(input("Guess:0 or 1? "))`
+
+#### Calulation Error
+
+
+#### Transaction Reconciliation
