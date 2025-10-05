@@ -2,7 +2,7 @@
 
 ## Modern Testing with pytest and LLMs
 
-https://modern-testing.pym.dev/elusive  
+https://modern-testing.pym.dev/  
 
 Original material taught by Trey Hunner of Truthful Technology LLC.  
 
