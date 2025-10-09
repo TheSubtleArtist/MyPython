@@ -364,3 +364,615 @@ The first calculation works, but the second fails.
 Fix the problems by adding the appropriate methods to handle empty lists gracefully.
 
 #### Transaction Reconciliation
+
+reconcile.py should reconcile to csv files containing financial transactions. It should identify when a transaction amount changed, but it does not.
+reconcile_test.py contains the failing test.
+
+1. Run `pytest --pdb reconcile_test.py`. `reconcile_test.py` fails at line 31 due to an error in `reconcile.py` at line 22.
+
+```python
+(.venv) PS D:\GitHub\MyPython> pytest --pdb reconcile_test.py
+=================================================================================================== test session starts ====================================================================================================
+platform win32 -- Python 3.13.7, pytest-8.4.2, pluggy-1.6.0
+rootdir: D:\GitHub\MyPython
+collected 1 item                                                                                                                                                                                                            
+
+reconcile_test.py F
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> traceback >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 
+
+    def test_reconcile_amount_change():
+        """Test case where transaction amounts changed: 50.00 → 49.99"""
+        # Create temporary CSV files
+        file1_data = [
+            ["Date", "Dept", "Amount", "Payee"],
+            ["2000-12-05", "Engineering", "50.00", "Zapier"]
+        ]
+        file2_data = [
+            ["Date", "Dept", "Amount", "Payee"],
+            ["2000-12-05", "Engineering", "49.99", "Zapier"]
+        ]
+
+        # Write to temporary files
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f1:
+            writer = csv.writer(f1)
+            writer.writerows(file1_data)
+            file1_path = f1.name
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f2:
+            writer = csv.writer(f2)
+            writer.writerows(file2_data)
+            file2_path = f2.name
+
+        try:
+>           removed, added, differences = reconcile_transactions(file1_path, file2_path)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+reconcile_test.py:31:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _  
+
+file1 = 'C:\\Users\\danie\\AppData\\Local\\Temp\\tmpg3f7usc2.csv', file2 = 'C:\\Users\\danie\\AppData\\Local\\Temp\\tmp5y2g3vu1.csv'
+
+    def reconcile_transactions(file1, file2):
+        with open(file1, 'r') as f1, open(file2, 'r') as f2:
+            reader1 = csv.reader(f1)
+            reader2 = csv.reader(f2)
+            header1 = next(reader1)
+            header2 = next(reader2)
+
+            if header1 != header2:
+                raise ValueError("Headers do not match.")
+
+            transactions1 = set(tuple(row) for row in reader1)
+            transactions2 = set(tuple(row) for row in reader2)
+
+            removed = transactions1 - transactions2
+            added = transactions2 - transactions1
+
+            differences = []
+            for t1 in transactions1:
+                for t2 in transactions2:
+>                   if t1[:3] == t2[:3] and t1[3] != t2[3]:
+                                            ^^^^^
+E                   IndexError: tuple index out of range # <<-- THE ERR
+
+reconcile.py:22: IndexError
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> entering PDB >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> PDB post_mortem (IO-capturing turned off) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 
+> d:\github\mypython\reconcile.py(22)reconcile_transactions()
+-> if t1[:3] == t2[:3] and t1[3] != t2[3]:
+(Pdb)
+```
+
+2. Add `breakpoint()` just above the point where ptest identifies the problem. In this case, just below the "if" statement.  
+3. run `pytest --pdb reconcile_test.py` again. The test stops at the point where comparisons are made.
+4. Pay attention to the evaluation expression. What are the values located at t1[3] and t2[3]. Are they values the function actually intends to compare?
+
+## Writing Tests with LLMs
+
+### Making Code Testable with LLM
+
+Consider using an LLM to refactor code to make it more testable.  
+
+In this example, 
+  ```python
+  import csv
+  from pathlib import Path
+  import sys
+  
+  [csv_filename] = sys.argv[1:]
+  
+  
+  total = 0
+  with open(csv_filename) as csv_file:
+      reader = csv.DictReader(csv_file)
+      for row in reader:
+          if row["Category"] == "Air Travel":
+              cost = float(row["Cost"].removeprefix("$"))
+              total += cost
+  print(f"Total air travel expenses: ${total:.02f}")
+  ```
+
+
+For this, I used Antropic Claude Sonnet 4.
+
+The prompt:  "I want to write automated tests for the following code. Evaluate the code. Is the code testable? If the code is not testable, refactor the code making automated tests more achievable. The code:"
+"
+The response:  
+
+```md
+Code Evaluation
+The current code has several testability issues:
+
+Hard dependency on sys.argv - Makes it impossible to test without manipulating command-line arguments
+Direct file I/O operations - Requires creating actual files for testing
+Mixed responsibilities - Argument parsing, file processing, and output are all in one block
+No separation of concerns - Everything happens in the global scope
+Direct print statements - Output can't be captured or verified easily
+```  
+
+The refactored code:
+
+```python
+import csv
+from pathlib import Path
+import sys
+from typing import TextIO, Dict, Any
+
+def parse_cost(cost_str: str) -> float:
+    """Parse a cost string (e.g., '$123.45') into a float."""
+    return float(cost_str.removeprefix("$"))
+
+def calculate_air_travel_expenses(csv_reader) -> float:
+    """Calculate total air travel expenses from a CSV reader."""
+    total = 0.0
+    for row in csv_reader:
+        if row.get("Category") == "Air Travel":
+            cost = parse_cost(row["Cost"])
+            total += cost
+    return total
+
+def process_expense_file(file_handle: TextIO) -> float:
+    """Process an expense CSV file and return total air travel expenses."""
+    reader = csv.DictReader(file_handle)
+    return calculate_air_travel_expenses(reader)
+
+def format_expense_result(total: float) -> str:
+    """Format the expense total as a currency string."""
+    return f"Total air travel expenses: ${total:.2f}"
+
+def main(csv_filename: str) -> str:
+    """Main function that processes a CSV file and returns formatted result."""
+    with open(csv_filename) as csv_file:
+        total = process_expense_file(csv_file)
+        return format_expense_result(total)
+
+def cli_main():
+    """Command-line interface entry point."""
+    if len(sys.argv) != 2:
+        print("Usage: python script.py <csv_filename>", file=sys.stderr)
+        sys.exit(1)
+    
+    csv_filename = sys.argv[1]
+    try:
+        result = main(csv_filename)
+        print(result)
+    except FileNotFoundError:
+        print(f"Error: File '{csv_filename}' not found.", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error processing file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":  
+
+    cli_main()  
+```  
+
+Beauty is in the eye of the beholder.  This output seeks testablity, as requested, but results in a good deal of ineffencies.
+
+
+### Generating Tests with LLMs
+
+The prompt 
+
+```md
+Please write tests for this code, using pytest.
+Put docstrings and comments in the tests to make them clear.
+Make sure the tests are thorough.
+The name of this file is `total_air_travel.py`.
+```
+
+The results...
+
+```python
+"""
+Comprehensive test suite for the CSV expense calculator.
+
+This module tests the expense calculation functionality including:
+- Core calculation logic with various data scenarios
+- File handling and error cases
+- Edge cases and boundary conditions
+- Integration testing with actual file operations
+
+Tests use pytest fixtures and parameterized tests for thorough coverage.
+"""
+
+import pytest
+import csv
+import sys
+from io import StringIO
+from unittest.mock import patch, mock_open, MagicMock
+from pathlib import Path
+import tempfile
+import os
+
+# Assuming the code is in expense_calculator.py
+from expense_calculator import calculate_expenses, main
+
+
+class TestCalculateExpenses:
+    """Test suite for the calculate_expenses function."""
+    
+    def test_calculate_expenses_with_air_travel_only(self):
+        """
+        Test calculation when CSV contains only air travel expenses.
+        
+        This verifies that the function correctly identifies and sums
+        all air travel expenses when no other categories are present.
+        """
+        csv_content = """Category,Cost
+Air Travel,$250.00
+Air Travel,$300.50
+Air Travel,$100.25"""
+        
+        file_handle = StringIO(csv_content)
+        total = calculate_expenses(file_handle)
+        
+        # Expected: 250.00 + 300.50 + 100.25 = 650.75
+        assert total == 650.75
+
+    def test_calculate_expenses_mixed_categories(self):
+        """
+        Test calculation with mixed expense categories.
+        
+        Ensures that only air travel expenses are included in the total
+        while other categories are properly ignored.
+        """
+        csv_content = """Category,Cost
+Air Travel,$250.00
+Hotel,$150.00
+Air Travel,$300.50
+Food,$75.25
+Car Rental,$200.00
+Air Travel,$50.00"""
+        
+        file_handle = StringIO(csv_content)
+        total = calculate_expenses(file_handle)
+        
+        # Expected: 250.00 + 300.50 + 50.00 = 600.50
+        # Hotel, Food, and Car Rental should be ignored
+        assert total == 600.50
+
+    def test_calculate_expenses_no_air_travel(self):
+        """
+        Test calculation when no air travel expenses exist.
+        
+        Verifies that the function returns 0 when the CSV contains
+        only non-air-travel expenses.
+        """
+        csv_content = """Category,Cost
+Hotel,$150.00
+Food,$75.25
+Car Rental,$200.00
+Taxi,$25.50"""
+        
+        file_handle = StringIO(csv_content)
+        total = calculate_expenses(file_handle)
+        
+        # Expected: 0.00 (no air travel expenses)
+        assert total == 0.0
+
+    def test_calculate_expenses_empty_file(self):
+        """
+        Test calculation with empty CSV file (headers only).
+        
+        Ensures graceful handling when CSV has headers but no data rows.
+        """
+        csv_content = """Category,Cost"""
+        
+        file_handle = StringIO(csv_content)
+        total = calculate_expenses(file_handle)
+        
+        assert total == 0.0
+
+    def test_calculate_expenses_costs_without_dollar_sign(self):
+        """
+        Test calculation with costs that don't have dollar sign prefix.
+        
+        Verifies that the function handles both "$250.00" and "250.00" formats.
+        """
+        csv_content = """Category,Cost
+Air Travel,250.00
+Air Travel,$300.50
+Air Travel,100.25"""
+        
+        file_handle = StringIO(csv_content)
+        total = calculate_expenses(file_handle)
+        
+        # Expected: 250.00 + 300.50 + 100.25 = 650.75
+        assert total == 650.75
+
+    def test_calculate_expenses_integer_costs(self):
+        """
+        Test calculation with integer cost values.
+        
+        Ensures that costs without decimal places are handled correctly.
+        """
+        csv_content = """Category,Cost
+Air Travel,$250
+Air Travel,$300
+Air Travel,$100"""
+        
+        file_handle = StringIO(csv_content)
+        total = calculate_expenses(file_handle)
+        
+        # Expected: 250 + 300 + 100 = 650
+        assert total == 650.0
+
+    def test_calculate_expenses_decimal_precision(self):
+        """
+        Test calculation with various decimal precision values.
+        
+        Verifies accurate floating-point arithmetic with different
+        decimal place counts.
+        """
+        csv_content = """Category,Cost
+Air Travel,$250.1
+Air Travel,$300.99
+Air Travel,$100.001"""
+        
+        file_handle = StringIO(csv_content)
+        total = calculate_expenses(file_handle)
+        
+        # Expected: 250.1 + 300.99 + 100.001 = 651.091
+        assert abs(total - 651.091) < 0.001  # Account for floating-point precision
+
+    def test_calculate_expenses_case_sensitive_category(self):
+        """
+        Test that category matching is case-sensitive.
+        
+        Ensures that "air travel", "AIR TRAVEL", etc. are not matched
+        when the expected category is "Air Travel".
+        """
+        csv_content = """Category,Cost
+air travel,$250.00
+AIR TRAVEL,$300.50
+Air travel,$100.25
+Air Travel,$50.00"""
+        
+        file_handle = StringIO(csv_content)
+        total = calculate_expenses(file_handle)
+        
+        # Only "Air Travel" (exact case) should be counted
+        assert total == 50.0
+
+    @pytest.mark.parametrize("cost_value,expected", [
+        ("$0.00", 0.0),
+        ("$0.01", 0.01),
+        ("$999999.99", 999999.99),
+        ("0.00", 0.0),
+        ("1.23", 1.23),
+    ])
+    def test_calculate_expenses_edge_cost_values(self, cost_value, expected):
+        """
+        Test calculation with edge case cost values.
+        
+        Parameterized test for various cost formats and edge values
+        including zero costs and very large amounts.
+        """
+        csv_content = f"""Category,Cost
+Air Travel,{cost_value}"""
+        
+        file_handle = StringIO(csv_content)
+        total = calculate_expenses(file_handle)
+        
+        assert abs(total - expected) < 0.001
+
+    def test_calculate_expenses_missing_category_column(self):
+        """
+        Test behavior when Category column is missing.
+        
+        Should raise a KeyError when trying to access the Category column.
+        """
+        csv_content = """Type,Cost
+Air Travel,$250.00"""
+        
+        file_handle = StringIO(csv_content)
+        
+        with pytest.raises(KeyError):
+            calculate_expenses(file_handle)
+
+    def test_calculate_expenses_missing_cost_column(self):
+        """
+        Test behavior when Cost column is missing.
+        
+        Should raise a KeyError when trying to access the Cost column.
+        """
+        csv_content = """Category,Amount
+Air Travel,$250.00"""
+        
+        file_handle = StringIO(csv_content)
+        
+        with pytest.raises(KeyError):
+            calculate_expenses(file_handle)
+
+    def test_calculate_expenses_invalid_cost_format(self):
+        """
+        Test behavior with invalid cost values.
+        
+        Should raise ValueError when cost cannot be converted to float.
+        """
+        csv_content = """Category,Cost
+Air Travel,invalid_cost"""
+        
+        file_handle = StringIO(csv_content)
+        
+        with pytest.raises(ValueError):
+            calculate_expenses(file_handle)
+
+    def test_calculate_expenses_empty_cost_field(self):
+        """
+        Test behavior with empty cost field.
+        
+        Should raise ValueError when trying to convert empty string to float.
+        """
+        csv_content = """Category,Cost
+Air Travel,"""
+        
+        file_handle = StringIO(csv_content)
+        
+        with pytest.raises(ValueError):
+            calculate_expenses(file_handle)
+
+    def test_calculate_expenses_extra_columns(self):
+        """
+        Test that extra CSV columns are ignored.
+        
+        Ensures the function works correctly even when additional
+        columns are present in the CSV.
+        """
+        csv_content = """Category,Cost,Date,Description,Department
+Air Travel,$250.00,2023-01-01,Flight to NYC,Sales
+Hotel,$150.00,2023-01-01,Hotel stay,Sales
+Air Travel,$300.50,2023-01-02,Return flight,Sales"""
+        
+        file_handle = StringIO(csv_content)
+        total = calculate_expenses(file_handle)
+        
+        # Should still calculate correctly despite extra columns
+        assert total == 550.50
+
+
+class TestMainFunction:
+    """Test suite for the main function and CLI behavior."""
+
+    def test_main_insufficient_arguments(self, capsys):
+        """
+        Test main function behavior with no command line arguments.
+        
+        Should print usage message to stderr and exit with code 1.
+        """
+        with patch('sys.argv', ['script.py']):
+            with pytest.raises(SystemExit) as exc_info:
+                main()
+            
+            # Check exit code
+            assert exc_info.value.code == 1
+            
+            # Check error message
+            captured = capsys.readouterr()
+            assert "Usage: python script.py <csv_filename>" in captured.err
+
+    def test_main_too_many_arguments(self, capsys):
+        """
+        Test main function behavior with too many command line arguments.
+        
+        Should print usage message to stderr and exit with code 1.
+        """
+        with patch('sys.argv', ['script.py', 'file1.csv', 'file2.csv']):
+            with pytest.raises(SystemExit) as exc_info:
+                main()
+            
+            assert exc_info.value.code == 1
+            captured = capsys.readouterr()
+            assert "Usage: python script.py <csv_filename>" in captured.err
+
+    def test_main_file_not_found(self, capsys):
+        """
+        Test main function behavior when specified file doesn't exist.
+        
+        Should print file not found error and exit with code 1.
+        """
+        with patch('sys.argv', ['script.py', 'nonexistent.csv']):
+            with pytest.raises(SystemExit) as exc_info:
+                main()
+            
+            assert exc_info.value.code == 1
+            captured = capsys.readouterr()
+            assert "Error: File 'nonexistent.csv' not found." in captured.err
+
+    @patch('builtins.open', new_callable=mock_open, read_data="""Category,Cost
+Air Travel,$250.00
+Hotel,$150.00
+Air Travel,$300.50""")
+    def test_main_successful_execution(self, mock_file, capsys):
+        """
+        Test main function with successful file processing.
+        
+        Should process file correctly and print formatted result to stdout.
+        """
+        with patch('sys.argv', ['script.py', 'test.csv']):
+            main()
+        
+        # Verify file was opened correctly
+        mock_file.assert_called_once_with('test.csv', 'r', encoding='utf-8', newline='')
+        
+        # Check output
+        captured = capsys.readouterr()
+        assert "Total air travel expenses: $550.50" in captured.out
+
+    @patch('builtins.open')
+    def test_main_csv_processing_error(self, mock_open_func, capsys):
+        """
+        Test main function behavior when CSV processing fails.
+        
+        Should catch ValueError/KeyError and print appropriate error message.
+        """
+        # Mock file that raises ValueError when processed
+        mock_file = MagicMock()
+        mock_file.__enter__.return_value = mock_file
+        mock_open_func.return_value = mock_file
+        
+        # Mock csv.DictReader to raise ValueError
+        with patch('csv.DictReader') as mock_reader:
+            mock_reader.side_effect = ValueError("Invalid CSV format")
+            
+            with patch('sys.argv', ['script.py', 'invalid.csv']):
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+                
+                assert exc_info.value.code == 1
+                captured = capsys.readouterr()
+                assert "Error processing CSV data:" in captured.err
+
+
+class TestIntegrationWithRealFiles:
+    """Integration tests using actual temporary files."""
+
+    def test_integration_with_temporary_file(self, tmp_path):
+        """
+        Integration test using a real
+```
+
+
+### Iteration
+
+When tests fail, show the error to the LLM  
+
+
+### Verify
+
+LLM outputs are non-determinitic, meaning the same inputs will not result in the same outputs. There are as many wrong answers as there are right ones.  
+
+Always review generated tests:
+
+Do they actually test the intended behavior?
+Are edge cases covered?
+Are error conditions handled?
+Do the tests make sense?
+
+### LLM Testing Workflow
+
+One possible workflow:  
+
+Analyze code for testability  
+Generate initial tests using an LLM  
+Iterative refinement, optionally with LLM help  
+Verify and understand: LLM output should not be blindly trusted  
+
+Another possible workflow:  
+
+Generate initial tests based on documentation / examples  
+Iterative refinement, optionally with LLM help  
+Verify and understand: LLM output should not be blindly trusted  
+
+General Advice:  
+
+Start with simple examples  
+Build complexity gradually  
+Always verify generated code  
+Use the LLM’s explanations to learn  
+Restart LLM conversations if they get too long  
+
+### LLM Exercises
