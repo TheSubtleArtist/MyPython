@@ -976,3 +976,51 @@ Use the LLM’s explanations to learn
 Restart LLM conversations if they get too long  
 
 ### LLM Exercises
+
+#### Picking The LLM
+
+Anthropic Claude 4 Sonnet
+
+#### percent_to_grade
+
+prompt: The following python is contained in a file called percent_to_grade.py. The code needs tested. Write and annotate tests using pytest that will identify any errors in the code and assist the developer in remediating those errors. The orginal clode is: 
+
+Result 1 file: percent_to_grade_llm.py
+
+The LLM provides the following additional information:  
+
+Key Issues These Tests Will Reveal:
+Redundant A+ Logic : The special case for percent > 99 is redundant since 100 % 10 = 0, and scores like 97, 98, 99 already get A+ through the general rule.
+Parameter Naming : The parameter round shadows Python's built-in round() function.
+Inconsistent Return Pattern : F grades return early, while other grades go through the suffix logic, making the code structure inconsistent.
+No Input Validation : The function doesn't validate input types or ranges.
+Edge Case Handling : The function works with negative numbers and numbers > 100, but this behavior might not be intended.
+Floating Point Precision : The function doesn't account for potential floating-point precision issues.
+
+**Run the test**
+
+```md
+(.venv) PS D:\GitHub\MyPython> pytest --pdb percent_to_grade_llm.py
+================================================================================================= test session starts ================================================================================================== 
+platform win32 -- Python 3.13.8, pytest-8.4.2, pluggy-1.6.0
+rootdir: D:\GitHub\MyPython
+collected 26 items                                                                                                                                                                                                       
+
+percent_to_grade_llm.py ..........................                                                                                                                                                                [100%] 
+
+================================================================================================== 26 passed in 0.06s ================================================================================================== 
+(.venv) PS D:\GitHub\MyPython>
+```
+
+
+
+
+#### phonetic
+
+
+
+#### rock
+
+
+
+#### vote_tally
