@@ -1006,18 +1006,116 @@ platform win32 -- Python 3.13.8, pytest-8.4.2, pluggy-1.6.0
 rootdir: D:\GitHub\MyPython
 collected 26 items                                                                                                                                                                                                       
 
-percent_to_grade_llm.py ..........................                                                                                                                                                 [100%] 
+percent_to_grade_llm.py ..........................                                                                                                                                 [100%] 
 
 ================================================================================= 26 passed in 0.06s ================================================================================== 
 (.venv) PS D:\GitHub\MyPython>
 ```
 
-
-
-
 #### phonetic
 
+The code is in phonetic.py
 
+The prompt: The following python is contained in a file called phonetic.py. The code needs tested. Write and annotate tests using pytest that will identify any errors in the code and assist the developer in remediating those errors. The orginal clode is: 
+
+The resultant test is contained in file phonetic_llm.py
+
+the LLM provide additionla insights: 
+
+```md
+Key Issues These Tests Will Reveal:
+Spacing Issues : The most significant bug is that join(' ') adds spaces between ALL characters, including existing spaces, creating double/triple spaces in the output.
+Non-alphabetic Character Handling : The function passes through digits, punctuation, and special characters unchanged, which may not be appropriate for phonetic spelling.
+Input Validation : No validation for input types - will crash with None, integers, or other non-string types.
+Unicode Handling : Accented characters and non-ASCII letters are passed through unchanged rather than being converted to their base letters.
+Whitespace Preservation : Tabs, newlines, and other whitespace characters are preserved, which may not be desired.
+Real-world Usage Issues : The spacing problem makes the output difficult to read for practical use cases.
+Suggested Fixes:
+Fix spacing : Filter out spaces before conversion or handle them specially
+Add input validation : Check for string input and handle edge cases
+Consider digits : Decide whether to spell out numbers or handle them specially
+Handle Unicode : Consider normalizing accented characters to base letters
+```
+
+**Run the test**
+
+There appaer to be errors:
+
+```md
+=================================
+(.venv) PS D:\GitHub\MyPython> pytest --pdb phonetic_llm.py        
+===================================== test session starts ======================================
+platform win32 -- Python 3.13.8, pytest-8.4.2, pluggy-1.6.0
+rootdir: D:\GitHub\MyPython
+collected 34 items                                                                              
+
+phonetic_llm.py ...................F
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> traceback >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+self = <phonetic_llm.TestPhoneticInputValidation object at 0x0000014BCF3A96D0>
+
+    def test_none_input(self):
+        """Test function behavior with None input
+
+        This will likely raise an AttributeError since None has no upper() method.
+        """
+        with pytest.raises(AttributeError):
+>           phonetic(None)
+
+phonetic_llm.py:155:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _  
+
+text = None
+
+    def phonetic(text):
+        """Convert text to NATO phonetic alphabet."""
+        nato = {
+            'A': 'Alpha', 'B': 'Bravo', 'C': 'Charlie', 'D': 'Delta',
+            'E': 'Echo', 'F': 'Foxtrot', 'G': 'Golf', 'H': 'Hotel',
+            'I': 'India', 'J': 'Juliet', 'K': 'Kilo', 'L': 'Lima',
+            'M': 'Mike', 'N': 'November', 'O': 'Oscar', 'P': 'Papa',
+            'Q': 'Quebec', 'R': 'Romeo', 'S': 'Sierra', 'T': 'Tango',
+            'U': 'Uniform', 'V': 'Victor', 'W': 'Whiskey', 'X': 'X-ray',
+            'Y': 'Yankee', 'Z': 'Zulu'
+        }
+
+>       return ' '.join(nato.get(char.upper(), char) for char in text)
+                                                                 ^^^^
+E       TypeError: 'NoneType' object is not iterable
+
+phonetic.py:13: TypeError
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> entering PDB >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+>>>>>>>>>>>>>>>>>>>>>>>>>> PDB post_mortem (IO-capturing turned off) >>>>>>>>>>>>>>>>>>>>>>>>>>>
+> d:\github\mypython\phonetic.py(13)phonetic()
+-> return ' '.join(nato.get(char.upper(), char) for char in text)
+(Pdb)
+```
+The test fails when the value of the input variable "text" is set to a value of "None". The indicates the developer should include an error handling technique in the event the user doesn't submit a value for the input variable.
+
+Another failure happens when inputting "123". Integers are not iterable, so the test fails.
+
+Let's follow this with a next prompt: Evaluate the original code using the test code. Is there a value which can be assigned to “text” which causes the test to fail?  
+
+The LLM finds additional potential issues using the test:
+
+The next prompt: Generate a summary table that includes the failing test case, the expected behavior, and the actual result. No explanation is necessary.  
+
+The Result:  
+
+| Test Case | Input | Expected Result | Actual Result | Failure Type |
+|-----------|-------|----------------|---------------|--------------|
+| `phonetic("A B")` | `"A B"` | `"Alpha Bravo"` | `"Alpha   Bravo"` | Spacing Bug |
+| `phonetic("A  B")` | `"A  B"` | `"Alpha  Bravo"` | `"Alpha     Bravo"` | Spacing Bug |
+| `phonetic("HI THERE")` | `"HI THERE"` | `"Hotel India Tango Hotel Echo Romeo Echo"` | `"Hotel India   Tango Hotel Echo Romeo Echo"` | Spacing Bug |
+| `phonetic("S O S")` | `"S O S"` | `"Sierra Oscar Sierra"` | `"Sierra   Oscar   Sierra"` | Spacing Bug |
+| `phonetic("   ")` | `"   "` | `"   "` | `"     "` | Spacing Bug |
+| `phonetic(None)` | `None` | Should handle gracefully | `AttributeError: 'NoneType' object has no attribute 'upper'` | Type Error |
+| `phonetic(123)` | `123` | Should handle gracefully | `TypeError: 'int' object is not iterable` | Type Error |
+| `phonetic(['A', 'B'])` | `['A', 'B']` | Should handle gracefully | `AttributeError: 'list' object has no attribute 'upper'` | Type Error |
+| `phonetic(True)` | `True` | Should handle gracefully | `AttributeError: 'bool' object has no attribute 'upper'` | Type Error |
+| `phonetic("café")` | `"café"` | `"Charlie Alpha Foxtrot Echo"` | `"Charlie Alpha Foxtrot é"` | Unicode Handling |
+| `phonetic("naïve")` | `"naïve"` | `"November Alpha India Victor Echo"` | `"November Alpha ï Victor Echo"` | Unicode Handling |
 
 #### rock
 
