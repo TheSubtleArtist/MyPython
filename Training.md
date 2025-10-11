@@ -1127,7 +1127,7 @@ The results are located in the rock2_llm.py
 
 The model provided additional results in the table, following the request from the previous exercise, though I did have request the model to reformat the table into an object which can be copied into a markdown document:  
 
-``md
+
 Key Issues These Tests Will Reveal:
 
 | Test Case | Issue Identified | Expected Behavior | Actual Result |
@@ -1137,7 +1137,6 @@ Key Issues These Tests Will Reveal:
 | `test_whitespace_handling()` | No input trimming | Accept " rock " | `ValueError: Invalid input` |
 | `@patch('rock2.rock') with exception` | Exception handling bug | Continue after exception | NameError when accessing undefined `result` |
 | Main function output | Inconsistent formatting | Clean output | Extra empty lines from `print()` |
-``
 
 ``python
 try:
