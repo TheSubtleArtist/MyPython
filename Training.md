@@ -1316,8 +1316,8 @@ except:
 
 The model also provides suggestions for instances when each option might be more effective: 
 
-```md  
 Trade-offs
+
 | Aspect | Option 1 (Early Return) | Option 2 (Defensive) |
 |--------|-------------------------|----------------------|
 | **Clarity** | ✅ Clear error vs success paths | ❌ Mixed success/error handling |
@@ -1326,20 +1326,23 @@ Trade-offs
 | **Safety** | ❌ Only protects specific errors | ✅ Protects entire operation |
 | **Maintainability** | ❌ Need to remember to handle new errors | ✅ Automatic protection for new code |
 
-When to Use Each
+**When to Use Each**  
+
 Use Option 1 (Early Return) when:
 
-You have well-defined, specific error conditions
-Performance is critical
-You want explicit control flow
-Errors are expected and recoverable
+- You have well-defined, specific error conditions
+- Performance is critical
+- You want explicit control flow
+- Errors are expected and recoverable
+
 Use Option 2 (Defensive) when:
 
-You want maximum safety
-The codebase changes frequently
-Multiple developers work on the code
-Unexpected errors should be contained
-You prefer "fail-safe" over "fail-fast"
+- You want maximum safety
+- The codebase changes frequently
+- Multiple developers work on the code
+- Unexpected errors should be contained
+- You prefer "fail-safe" over "fail-fast"
+
 The defensive approach prioritizes safety and robustness over explicit control flow, making it more suitable for production code where unexpected failures should be gracefully contained.
 ```
 
