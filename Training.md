@@ -1915,6 +1915,49 @@ def test_main_help_output(capsys, monkeypatch):
 
 Write tests for the howdy function using pytest’s capsys fixture  
 
+```md
+Key Improvements with pytest and capsys:
+1. Simplified Output Capture:
+- capsys.readouterr() cleanly captures both stdout and stderr
+- Automatic cleanup between tests
+2. Parametrized Testing:
+- @pytest.mark.parametrize for clean, readable test cases
+- Easy to add new test cases without duplicating code
+- Better test failure reporting with parameter values
+3. Fixtures:
+- Custom fixtures for reusable test data
+- sample_names and special_characters fixtures for organized test data
+- Automatic dependency injection
+4. Better Error Handling:
+- pytest.raises() for exception testing
+- More intuitive assertion syntax with assert
+5. Test Organization:
+- Multiple test classes for logical grouping
+- Custom markers (@pytest.mark.slow, @pytest.mark.integration)
+- Easy selective test running
+6. Enhanced Mocking:
+- monkeypatch fixture for cleaner mocking
+- No need to import separate mock libraries
+7. Cleaner Assertions:
+- Simple assert statements instead of self.assertEqual
+- Better failure messages automatically generated
+- Verification of both stdout and stderr
+```
+
+**Running the Tests**
+
+Run all tests  
+`pytest test_howdy.py -v`  
+
+Run specific test class  
+`pytest test_howdy.py::TestHowdyParameterized -v`  
+
+Run tests with specific markers  
+`pytest test_howdy.py -m "not slow" -v`  
+
+Run with coverage  
+`pytest test_howdy.py --cov=howdy -v`  
+
 #### flip_dict
 
 Write tests for the flip_dict function  
