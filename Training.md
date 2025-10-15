@@ -1,6 +1,82 @@
 # Modern Python Testing
 
-## Introduction to Modern Testing
+<!-- TOC -->
+
+- [Modern Python Testing](#modern-python-testing)
+    - [INTRODUCTION TO MODERN TESTING](#introduction-to-modern-testing)
+        - [Testing Fundamentals](#testing-fundamentals)
+        - [Creating a virtual python environment](#creating-a-virtual-python-environment)
+        - [Activate the virtual environment](#activate-the-virtual-environment)
+        - [Deactivate a VENV](#deactivate-a-venv)
+        - [Delete a VENV](#delete-a-venv)
+        - [Install pytest](#install-pytest)
+        - [Getting Started with pytest](#getting-started-with-pytest)
+            - [Test Discovery](#test-discovery)
+            - [Running all test](#running-all-test)
+            - [Verbose Output](#verbose-output)
+        - [Teseting Exercises](#teseting-exercises)
+    - [DEBUGGING](#debugging)
+        - [The Python Debugger](#the-python-debugger)
+        - [A Broken Program](#a-broken-program)
+        - [Breakpoint](#breakpoint)
+        - [PDB Commands](#pdb-commands)
+            - [Next vs. Step](#next-vs-step)
+        - [Debugging with pytest](#debugging-with-pytest)
+            - [Debug on failure](#debug-on-failure)
+            - [Debug from Start](#debug-from-start)
+            - [Useful Flags](#useful-flags)
+            - [Debugging a Failed Test](#debugging-a-failed-test)
+        - [Inspection Python Objects](#inspection-python-objects)
+        - [Debugging Tips](#debugging-tips)
+        - [Debugging Exercises](#debugging-exercises)
+            - [Guessing Game](#guessing-game)
+            - [Calulation Error](#calulation-error)
+            - [Transaction Reconciliation](#transaction-reconciliation)
+    - [WRITING TESTS WITH LLMs](#writing-tests-with-llms)
+        - [Making Code Testable with LLM](#making-code-testable-with-llm)
+        - [Generating Tests with LLMs](#generating-tests-with-llms)
+        - [Iteration](#iteration)
+        - [Verify](#verify)
+        - [LLM Testing Workflow](#llm-testing-workflow)
+        - [LLM Exercises](#llm-exercises)
+            - [Picking The LLM](#picking-the-llm)
+            - [percent_to_grade](#percent_to_grade)
+            - [phonetic](#phonetic)
+            - [rock](#rock)
+            - [vote_tally](#vote_tally)
+    - [Test Coverage](#test-coverage)
+        - [Measuring Coverge with pytest](#measuring-coverge-with-pytest)
+        - [Basic Test](#basic-test)
+        - [HTML Coverage Report](#html-coverage-report)
+        - [Missing Lines Report](#missing-lines-report)
+            - [Default Line Coverage](#default-line-coverage)
+            - [Branch Coverage](#branch-coverage)
+        - [Coverage in the LLM Era](#coverage-in-the-llm-era)
+        - [Coverage Exercises](#coverage-exercises)
+            - [dollars coverage](#dollars-coverage)
+            - [percent_to_grade coverage](#percent_to_grade-coverage)
+            - [phonetic coverage](#phonetic-coverage)
+            - [rock coverage](#rock-coverage)
+            - [vote_tally coverage](#vote_tally-coverage)
+    - [OUTPUT AND ASSERTIONS](#output-and-assertions)
+        - [TESTING EXCEPTIONS](#testing-exceptions)
+            - [Basic Exception Tesing](#basic-exception-tesing)
+        - [CAPTURING STANDARD OUTPUT](#capturing-standard-output)
+            - [Method 1: Monkey Patch Print Weak](#method-1-monkey-patch-print-weak)
+            - [Method 2: contextlib.redirect_stdout better](#method-2-contextlibredirect_stdout-better)
+            - [Method 3: pytest’s capsys fixture best](#method-3-pytests-capsys-fixture-best)
+        - [Advanced Assertion Patterns](#advanced-assertion-patterns)
+            - [Testing Partial Output](#testing-partial-output)
+            - [Testing with Regular Expressions](#testing-with-regular-expressions)
+            - [Testing Multi-line output](#testing-multi-line-output)
+        - [OUTPUT AND EXCEPTION TESTING EXERCISES](#output-and-exception-testing-exercises)
+            - [howdy](#howdy)
+            - [flip_dict](#flip_dict)
+            - [altprint](#altprint)
+
+<!-- /TOC -->
+
+## INTRODUCTION TO MODERN TESTING
 
 https://modern-testing.pym.dev/  
 
@@ -103,7 +179,7 @@ pytest automatically finds tests using these rules:
 - rock
 - vote_tally
 
-## Debugging
+## DEBUGGING
 
 ### The Python Debugger
 
@@ -207,6 +283,7 @@ Run the `interact` command to enter the standard python REPL and use any avaialb
 '1'
 >>>
 ```
+
 use `dir()` to list all variables
 list the values of `answer` and `n` to show their values
 
@@ -448,7 +525,7 @@ reconcile.py:22: IndexError
 3. run `pytest --pdb reconcile_test.py` again. The test stops at the point where comparisons are made.
 4. Pay attention to the evaluation expression. What are the values located at t1[3] and t2[3]. Are they values the function actually intends to compare?
 
-## Writing Tests with LLMs
+## WRITING TESTS WITH LLMs
 
 ### Making Code Testable with LLM
 
@@ -1602,3 +1679,262 @@ Are there any uncovered branches?
 #### vote_tally coverage
 
 Check your code coverage for the get_vote_tally function.  
+
+## OUTPUT AND ASSERTIONS
+
+### TESTING EXCEPTIONS
+
+Testing error cases when code SHOULD raise and exception  
+
+pytest provide ``pytest.raises`` context manager for testing exceptions  
+
+#### Basic Exception Tesing
+
+files: quadratic.py, quadratic_test.py  
+
+Run the basic test: ``pytest quadratic.py quadratic_test.py``
+
+```md
+(.venv) PS D:\GitHub\MyPython> pytest quadratic.py quadratic_test.py
+=================================================================== test session starts ====================================================================
+platform win32 -- Python 3.13.8, pytest-8.4.2, pluggy-1.6.0
+rootdir: D:\GitHub\MyPython
+plugins: cov-7.0.0
+collected 5 items                                                                                                                                           
+
+quadratic_test.py .....                                                                                                                               [100%] 
+
+==================================================================== 5 passed in 0.09s ===================================================================== 
+(.venv) PS D:\GitHub\MyPython> 
+```
+
+### CAPTURING STANDARD OUTPUT
+
+#### Method 1: Monkey Patch Print (Weak)
+
+Based on a test method for total_air_travel example earlier The LLM used unittest.mock.pathc ot monkey patch the built-in print function  
+
+```python
+from unittest.mock import patch
+
+# ...
+
+class TestMain:
+    """Test the main command-line interface function."""
+
+    # ...
+
+    @patch('sys.argv')
+    @patch('builtins.print')
+    def test_main_with_valid_file(self, mock_print, mock_argv, sample_csv_file):
+        """Test main function with a valid CSV file."""
+        # Mock command line arguments
+        mock_argv.__getitem__.return_value = [sample_csv_file]
+        mock_argv.__len__.return_value = 2  # script name + 1 argument
+
+        # Call main function
+        main()
+
+        # Verify print was called with expected output
+        mock_print.assert_called_once_with("Total air travel expenses: $800.25")
+
+    @patch('sys.argv')
+    @patch('builtins.print')
+    def test_main_with_no_air_travel(self, mock_print, mock_argv, tmp_path):
+        """Test main function with a CSV file containing no air travel expenses."""
+        # Create CSV with no air travel
+        csv_content = """Category,Cost,Description
+Hotels,$150.00,Hotel stay
+Food,$75.50,Meals"""
+
+        csv_file = tmp_path / "no_air_travel.csv"
+        csv_file.write_text(csv_content)
+
+        mock_argv.__getitem__.return_value = [str(csv_file)]
+        mock_argv.__len__.return_value = 2
+
+        main()
+
+        mock_print.assert_called_once_with("Total air travel expenses: $0.00")
+```
+
+This approach has several problems:
+
+- Brittle - Assumes code uses built-in print instead of other ways to write to sys.stdout
+- Complex - Requires understanding mocking concepts and decorators
+- Unnecessary - pytest provides better built-in solutions
+
+#### Method 2: contextlib.redirect_stdout (better)
+
+Instead of monkey patching the built-in print function, we could monkey patch the standard output stream to capture all output.
+
+We could do that with `contextlib.redirect_stdout`:
+
+```python
+import io
+from contextlib import redirect_stdout
+from unittest.mock import patch
+
+# ...
+
+class TestMain:
+    """Test the main command-line interface function."""
+
+    # ...
+
+    @patch('sys.argv')
+    def test_main_with_valid_file(self, mock_argv, sample_csv_file):
+        """Test main function with a valid CSV file."""
+        # Mock command line arguments
+        mock_argv.__getitem__.return_value = [sample_csv_file]
+        mock_argv.__len__.return_value = 2  # script name + 1 argument
+
+        with redirect_stdout(io.StringIO()) as stdout:
+            main()
+
+        assert stdout.getvalue() == "Total air travel expenses: $800.25\n"
+```
+
+#### Method 3: pytest’s capsys fixture (best)
+
+Instead of manually monkey patching print or `sys.stdout`, we could rely on pytest to capture output for us.
+
+pytest’s `capsys` fixture captures anything written to `sys.stdout` and `sys.stderr`
+
+Adding functionality to our test function by simply adding a parameter may seem a bit magical (and it is!). This capsys argument is a pytest fixture. We’ll cover fixtures in more detail later.  :  
+
+```python
+from unittest.mock import patch
+
+# ...
+
+class TestMain:
+    """Test the main command-line interface function."""
+
+    # ...
+
+    @patch('sys.argv')
+    @patch('builtins.print')
+    def test_main_with_valid_file(self, mock_print, mock_argv, sample_csv_file, capsys):
+        """Test main function with a valid CSV file."""
+        # Mock command line arguments
+        mock_argv.__getitem__.return_value = [sample_csv_file]
+        mock_argv.__len__.return_value = 2  # script name + 1 argument
+
+        # Call main function
+        main()
+
+        # Capture and verify output
+        captured = capsys.readouterr()
+        assert captured.out == "Total air travel expenses: $800.25\n"
+        assert captured.err == ""
+```
+
+### Advanced Assertion Patterns
+
+#### Testing Partial Output
+
+```python
+from unittest.mock import patch
+from quadratic import main
+
+@patch('sys.argv', ['quadratic.py', '1', '-5', '6'])
+def test_main_partial_output(capsys):
+    """Test that main prints solution values, not exact format."""
+    main(['1', '-5', '6'])
+
+    captured = capsys.readouterr()
+    # Test that both solutions appear in output, regardless of exact format
+    assert "3.0" in captured.out
+    assert "2.0" in captured.out
+    assert "x =" in captured.out
+```
+
+#### Testing with Regular Expressions
+
+```python
+import re
+from unittest.mock import patch
+from quadratic import main
+
+@patch('sys.argv', ['quadratic.py', '1', '-3', '2'])
+def test_main_regex_output(capsys):
+    """Test output format using regex patterns."""
+    main(['1', '-3', '2'])
+
+    captured = capsys.readouterr()
+    # Match pattern: "x = <number> or <number>"
+    pattern = r"x = \d+\.\d+ or \d+\.\d+"
+    assert re.search(pattern, captured.out)
+```
+
+#### Testing Multi-line output
+
+uses `textwrap.dedent`
+
+```python
+import textwrap
+from unittest.mock import patch
+from quadratic import main, QuadraticError
+
+def test_main_help_output(capsys, monkeypatch):
+    """Test help output when no arguments provided."""
+    # Simulate a version that prints usage when no args given
+    def mock_main(args):
+        if not args:
+            print(textwrap.dedent("""
+                Usage: quadratic.py <a> <b> <c>
+
+                Solves quadratic equations of the form ax² + bx + c = 0
+
+                Arguments:
+                  a, b, c    Coefficients (a cannot be 0)
+            """).strip())
+            return
+        # ... rest of original logic
+
+    monkeypatch.setattr('quadratic.main', mock_main)
+    main([])
+
+    captured = capsys.readouterr()
+    expected = textwrap.dedent("""
+        Usage: quadratic.py <a> <b> <c>
+
+        Solves quadratic equations of the form ax² + bx + c = 0
+
+        Arguments:
+          a, b, c    Coefficients (a cannot be 0)
+    """).strip()
+
+    assert captured.out == expected
+```
+
+### OUTPUT AND EXCEPTION TESTING EXERCISES
+
+#### howdy
+
+Write tests for the howdy function using pytest’s capsys fixture  
+
+#### flip_dict
+
+Write tests for the flip_dict function  
+Example useage of flip_dict. The function raises ValueError when multiple keys have the same value because you can’t have duplicate keys in the flipped dictionary. :  
+
+```python
+>>> flip_dict({"a": 1, "b": 2})
+{1: "a", 2: "b"}
+>>> flip_dict({"x": "hello", "y": "world"})
+{"hello": "x", "world": "y"}
+>>> flip_dict({"a": 1, "b": 1})  # Duplicate values!
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "<stdin>", line 3, in flip_dict
+ValueError: Duplicate dictionary values found
+```
+
+#### altprint
+
+Write tests for the altprint function.
+
+Hint: Since this function writes to sys.stdout, you’ll need to use pytest’s capsys fixture to capture the output.
+
