@@ -1975,9 +1975,95 @@ Traceback (most recent call last):
 ValueError: Duplicate dictionary values found
 ```
 
+In this case, we can ask an LLM to identify and annotate errors in the code. the annotated code looks like: 
+
+```python
+def flip_dict_annotated(dictionary):
+    """Return a new dictionary that maps the original values to the keys."""
+    
+    # ERROR 1: No type checking - function will fail with non-dict types
+    # This will raise AttributeError if dictionary is None, list, string, etc.
+    
+    # ERROR 2: Doesn't handle unhashable values
+    # If dictionary values contain lists, dicts, sets, etc., this will fail
+    # when trying to use them as keys in the returned dictionary
+    
+    if len(set(dictionary.values())) != len(dictionary):
+        # ERROR 3: set() call will fail if values are unhashable
+        # Example: {1: [1, 2], 2: [3, 4]} will raise TypeError here
+        
+        raise ValueError("Duplicate dictionary values found")
+        
+    return {
+        value: key  # ERROR 4: This line will fail if 'value' is unhashable
+        for key, value in dictionary.items()
+        # ERROR 5: No validation that 'value' can be used as a dictionary key
+    }
+
+# ADDITIONAL ISSUES:
+# - No handling of empty dictionary (though this actually works fine)
+# - No docstring examples showing expected behavior
+# - ValueError message could be more descriptive
+# - No handling of None values (though None is hashable, so this works)
+```
+**Basic Test Execution, With Verbosity**  
+
+Run all tests in the file  
+`pytest test_flip_dict.py`  
+
+Run with verbose output (shows each test name)  
+`pytest test_flip_dict.py -v`  
+
+Run with extra verbose output (shows more details)  
+`pytest test_flip_dict.py -vv`  
+
+Run with quiet mode (minimal output)  
+`pytest test_flip_dict.py -q`  
+
+**Test Specific Classes**  
+
+Run only basic functionality tests  
+`pytest test_flip_dict.py::TestFlipDictBasicFunctionality -v`  
+
+Run only error-related tests  
+`pytest test_flip_dict.py::TestFlipDictTypeErrors -v`  
+
+Run only unhashable value tests  
+`pytest test_flip_dict.py::TestFlipDictUnhashableValues -v`  
+
+Run multiple specific classes  
+`pytest test_flip_dict.py::TestFlipDictBasicFunctionality test_flip_dict.py::TestFlipDictDuplicateValues -v`  
+
+**Test Specific Methods**  
+
+Run a single specific test  
+`pytest test_flip_dict.py::TestFlipDictBasicFunctionality::test_flip_dict_simple -v`  
+
+Run specific parameterized test  
+`pytest test_flip_dict.py::TestFlipDictParameterized::test_flip_dict_valid_cases -v`  
+
+Run multiple specific methods  
+`pytest test_flip_dict.py::TestFlipDictBasicFunctionality::test_flip_dict_simple test_flip_dict.py::TestFlipDictTypeErrors::test_flip_dict_with_none_input -v`  
+
 #### altprint
 
 Write tests for the altprint function.
 
 Hint: Since this function writes to sys.stdout, you’ll need to use pytest’s capsys fixture to capture the output.
 
+**Running the Tests**
+
+Run all tests  
+`pytest test_altprint.py -v`  
+
+Run only basic tests  
+`pytest test_altprint.py::TestAltprintBasic -v`  
+
+Run parameterized tests  
+`pytest test_altprint.py::TestAltprintParameterized -v`  
+
+Skip slow tests  
+`pytest test_altprint.py -m "not slow" -v`  
+
+Run with coverage  
+`pytest test_altprint.py --cov -v`  
