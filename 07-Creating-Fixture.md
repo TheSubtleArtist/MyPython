@@ -315,3 +315,215 @@ def test_main_pipe_to_comma_conversion(with_path_args):
     assert "Jane,25,Boston" in result
 ```
 
+## More on Fixtures
+
+### Passing Data to Fixtures
+
+We could also use markers to send data into a fixture.
+
+Here we’ve “marked” our tests with an argv marker and we’re reading that argv marker by using the request fixture (our fixture is relying on a pytest built-in fixture):
+
+```python
+
+import datetime
+import sys
+
+import pytest
+
+from dmath import parse_args
+
+
+@pytest.fixture(name='args')
+def patch_args(request):
+    """Set sys.argv to ['program.py'] and send to test function."""
+    old_sys, sys.argv = sys.argv, ['program.py']
+    argv_marker = request.node.get_closest_marker("argv")
+    if argv_marker is not None:
+        sys.argv += argv_marker.args
+    yield sys.argv
+    sys.argv = old_sys
+
+def test_no_args(args):
+    with pytest.raises(SystemExit) as e:
+        parse_args()
+
+@pytest.mark.argv('5')
+def test_single_integer_parsed(args):
+    result = parse_args()
+    assert result.days_or_date == 5
+    assert result.date == datetime.date.today()
+
+@pytest.mark.argv('invalid')
+def test_invalid_input(args):
+    with pytest.raises(SystemExit) as e:
+        parse_args()
+
+@pytest.mark.argv('1999-12-31')
+def test_date_only_no_second_arg(args):
+    with pytest.raises(SystemExit) as e:
+        parse_args()
+
+@pytest.mark.argv('1999-12-31', '5')
+def test_date_and_days(args):
+    result = parse_args()
+    assert result.date == datetime.date(1999, 12, 31)
+    assert result.days_or_date == 5
+
+@pytest.mark.argv('2000-01-01', '2000-01-10')
+def test_two_dates(args):
+    result = parse_args()
+    assert result.date == datetime.date(2000, 1, 1)
+    assert result.days_or_date == datetime.date(2000, 1, 10)
+
+@pytest.mark.argv('30')
+def test_default_date_with_days(args):
+    result = parse_args()
+    assert result.date == datetime.date.today()
+    assert result.days_or_date == 30
+```
+
+You can see what else you can do with that request fixture in the documentation.
+
+You’ll want to modify your pytest.ini file (or make a new one) to inform it of this new argv marker:
+
+
+[pytest]
+markers =
+    argv: Mark command line arguments to use with args fixture
+Alternatively you could add this to conftest.py to modify your pytest configuration for you (plugins often do this to register their markers automatically):
+
+```python
+
+
+def pytest_configure(config):
+    # register an additional marker
+    config.addinivalue_line(
+        "markers", "argv: Mark command line arguments to use with args fixture"
+    )
+```
+
+### Automatic Fixtures
+
+You can automatically use a fixture for every test in a module by setting a global pytestmark variable equal to pytest.mark.usefixtures(FIXTURE_NAME):
+
+```python
+import datetime
+import sys
+
+import pytest
+
+from dmath import parse_args
+
+
+pytestmark = pytest.mark.usefixtures("args")
+
+
+def test_no_args():
+    with pytest.raises(SystemExit) as e:
+        parse_args()
+
+@pytest.mark.argv('5')
+def test_single_integer_parsed():
+    result = parse_args()
+    assert result.days_or_date == 5
+    assert result.date == datetime.date.today()
+
+@pytest.mark.argv('invalid')
+def test_invalid_input():
+    with pytest.raises(SystemExit) as e:
+        parse_args()
+
+@pytest.mark.argv('1999-12-31')
+def test_date_only_no_second_arg():
+    with pytest.raises(SystemExit) as e:
+        parse_args()
+
+@pytest.mark.argv('1999-12-31', '5')
+def test_date_and_days():
+    result = parse_args()
+    assert result.date == datetime.date(1999, 12, 31)
+    assert result.days_or_date == 5
+
+@pytest.mark.argv('2000-01-01', '2000-01-10')
+def test_two_dates():
+    result = parse_args()
+    assert result.date == datetime.date(2000, 1, 1)
+    assert result.days_or_date == datetime.date(2000, 1, 10)
+```
+
+Or you can make every test method in a class use a fixture automatically by using pytest.mark.usefixtures as a class decorator:
+
+```python
+import datetime
+import sys
+
+import pytest
+
+from dmath import parse_args
+
+
+@pytest.mark.usefixtures("args")
+class Test_parse_args:
+    def test_no_args(self):
+        with pytest.raises(SystemExit) as e:
+            parse_args()
+
+    @pytest.mark.argv('5')
+    def test_single_integer_parsed(self):
+        result = parse_args()
+        assert result.days_or_date == 5
+        assert result.date == datetime.date.today()
+
+    @pytest.mark.argv('invalid')
+    def test_invalid_input(self):
+        with pytest.raises(SystemExit) as e:
+            parse_args()
+
+    @pytest.mark.argv('1999-12-31')
+    def test_date_only_no_second_arg(self):
+        with pytest.raises(SystemExit) as e:
+            parse_args()
+
+    @pytest.mark.argv('1999-12-31', '5')
+    def test_date_and_days(self):
+        result = parse_args()
+        assert result.date == datetime.date(1999, 12, 31)
+        assert result.days_or_date == 5
+
+    @pytest.mark.argv('2000-01-01', '2000-01-10')
+    def test_two_dates(self):
+        result = parse_args()
+        assert result.date == datetime.date(2000, 1, 1)
+        assert result.days_or_date == datetime.date(2000, 1, 10)
+
+```
+
+We can even make a fixture that’s automatically used in every test by passing an autouse=True argument when defining our fixture:
+
+```python
+
+
+import sys
+
+import pytest
+
+
+@pytest.fixture(name='args', autouse=True)
+def patch_args(request):
+    """Set sys.argv to ['program.py'] and send to test function."""
+    old_sys, sys.argv = sys.argv, ['program.py']
+    argv_marker = request.node.get_closest_marker("argv")
+    if argv_marker is not None:
+        sys.argv += argv_marker.args
+    yield sys.argv
+    sys.argv = old_sys
+```
+
+Though it’s probably best not to automatically use most fixtures.
+
+Note that in all the above cases (using pytest.mark.usefixtures or autouse=True) that we don’t get access to the actual return value of the fixture.
+
+### Fixture Scope
+
+If you don’t want a fixture to be re-run for every test that uses it, you can change the fixture scope from “function” (the default) to “class”, “module”, “package”, or “session”. The “session” scope means the fixture will be run just once for the whole testing session (the entire Python process execution).
+
